@@ -83,18 +83,26 @@ const hotspots = [
   { id: 'battery', label: 'Pin lưu trữ', x: '47%', y: '75%', copy: 'Lưu điện ban ngày để dùng vào buổi tối hoặc khi mất lưới.' },
 ];
 
+const simulationModes = [
+  { id: 'day', label: 'Ban ngày', title: 'Điện mặt trời cấp cho nhà trước', copy: 'Dòng năng lượng chạy từ mái pin vào hệ thống, cấp điện cho nhà và sạc phần dư vào pin lưu trữ.' },
+  { id: 'night', label: 'Buổi tối', title: 'Pin lưu trữ cấp điện cho nhà', copy: 'Năng lượng đã lưu được dùng cho các thiết bị buổi tối, giúp giảm phụ thuộc vào điện lưới.' },
+  { id: 'backup', label: 'Mất điện', title: 'Hệ thống chuyển sang nguồn dự phòng', copy: 'Pin lưu trữ giữ các thiết bị quan trọng hoạt động ngay cả khi điện lưới bị ngắt.' },
+];
+
 function App() {
   const [activeService, setActiveService] = useState(0);
   const [activeHotspot, setActiveHotspot] = useState('roof');
   const [showBattery, setShowBattery] = useState(true);
   const [showFlow, setShowFlow] = useState(true);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [simulationMode, setSimulationMode] = useState('day');
   const [menuOpen, setMenuOpen] = useState(false);
 
   const selectedHotspot = useMemo(
     () => hotspots.find((hotspot) => hotspot.id === activeHotspot) ?? hotspots[0],
     [activeHotspot],
   );
+  const selectedMode = simulationModes.find((mode) => mode.id === simulationMode) ?? simulationModes[0];
 
   return (
     <div className="app">
@@ -186,16 +194,17 @@ function App() {
           </div>
           <div className="experience-board">
             <div className="board-toolbar"><span><span className="status-dot" /> LIVE SIMULATION</span><span>HYBRID SYSTEM / 08.6 KWP</span></div>
-            <div className={isPlaying ? 'simulation is-playing' : 'simulation'}>
+            <div className={`simulation mode-${simulationMode} ${isPlaying ? 'is-playing' : ''}`}>
               <div className="sim-grid" />
               <div className="sim-sun" />
               <div className="sim-house"><div className="sim-panel-roof">{Array.from({ length: 12 }).map((_, index) => <i key={index} />)}</div><div className="sim-wall"><span className="sim-window" /><span className="sim-window second" /><span className="sim-door" /></div></div>
               {showBattery && <div className="sim-battery"><BatteryCharging size={20} /><span>BATTERY<br /><b>12.4 kWh</b></span></div>}
               {showFlow && <div className="energy-flow flow-one"><span /><span /><span /><span /></div>}
               {hotspots.map((hotspot) => <button key={hotspot.id} className={activeHotspot === hotspot.id ? 'hotspot active' : 'hotspot'} style={{ left: hotspot.x, top: hotspot.y }} onClick={() => setActiveHotspot(hotspot.id)} aria-label={hotspot.label}><span>{activeHotspot === hotspot.id ? <Check size={12} /> : '+'}</span></button>)}
-              <div className="sim-caption"><span>{selectedHotspot.label}</span><p>{selectedHotspot.copy}</p></div>
+              <div className="sim-caption"><span>{selectedMode.title}</span><p>{selectedMode.copy}</p><small>{selectedHotspot.label}: {selectedHotspot.copy}</small></div>
             </div>
             <div className="board-controls">
+              <div className="mode-switcher" aria-label="Chọn trạng thái mô phỏng">{simulationModes.map((mode) => <button className={simulationMode === mode.id ? 'mode-active' : ''} key={mode.id} onClick={() => setSimulationMode(mode.id)}>{mode.label}</button>)}</div>
               <button onClick={() => setIsPlaying(!isPlaying)}><CirclePlay size={17} /> {isPlaying ? 'Đang phát animation' : 'Phát animation'}</button>
               <button className={showBattery ? 'control-active' : ''} onClick={() => setShowBattery(!showBattery)}><Layers3 size={16} /> Pin lưu trữ</button>
               <button className={showFlow ? 'control-active' : ''} onClick={() => setShowFlow(!showFlow)}><ScanLine size={16} /> Dòng năng lượng</button>
