@@ -263,7 +263,13 @@ function App() {
               <div className={`simulation mode-${simulationMode} ${isPlaying ? 'is-playing' : ''}`}>
               <div className="sim-grid" />
               <div className="sim-sun" />
-              <div className="sim-house"><div className="sim-panel-roof">{Array.from({ length: Math.max(1, Math.min(24, totalPanels)) }).map((_, index) => <i key={index} />)}</div><div className="sim-wall"><span className="sim-window" /><span className="sim-window second" /><span className="sim-door" /></div></div>
+              <div className="sim-house">
+                <div className="sim-roof sim-roof-left"><div className="sim-panel-roof">{Array.from({ length: Math.max(1, Math.min(24, totalPanels)) }).map((_, index) => <i key={index} />)}</div></div>
+                <div className="sim-roof sim-roof-right" />
+                <div className="sim-front"><span className="sim-window" /><span className="sim-window second" /><span className="sim-door" /></div>
+                <div className="sim-side"><span className="sim-side-window" /></div>
+                <div className="sim-foundation" />
+              </div>
               {showBattery && <div className="sim-battery"><BatteryCharging size={20} /><span>BATTERY<br /><b>12.4 kWh</b></span></div>}
               {showFlow && <div className="energy-flow flow-one"><span /><span /><span /><span /></div>}
               {hotspots.map((hotspot) => <button key={hotspot.id} className={activeHotspot === hotspot.id ? 'hotspot active' : 'hotspot'} style={{ left: hotspot.x, top: hotspot.y }} onClick={() => setActiveHotspot(hotspot.id)} aria-label={hotspot.label}><span>{activeHotspot === hotspot.id ? <Check size={12} /> : '+'}</span></button>)}
