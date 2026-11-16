@@ -89,6 +89,9 @@ const simulationModes = [
   { id: 'backup', label: 'Mất điện', title: 'Hệ thống chuyển sang nguồn dự phòng', copy: 'Pin lưu trữ giữ các thiết bị quan trọng hoạt động ngay cả khi điện lưới bị ngắt.' },
 ];
 
+const roofTypes = ['Mái tôn', 'Mái ngói', 'Mái Nhật', 'Mái bằng', 'Mái chữ L', 'Mái chữ L ngược', 'Mái chữ T'];
+const placementOptions = ['Mái chính trước', 'Mái chính sau', 'Mái nhánh trái', 'Mái nhánh phải'];
+
 function App() {
   const [activeService, setActiveService] = useState(0);
   const [activeHotspot, setActiveHotspot] = useState('roof');
@@ -96,6 +99,13 @@ function App() {
   const [showFlow, setShowFlow] = useState(true);
   const [isPlaying, setIsPlaying] = useState(false);
   const [simulationMode, setSimulationMode] = useState('day');
+  const [roofType, setRoofType] = useState('Mái tôn');
+  const [roofDimensions, setRoofDimensions] = useState({ mainWidth: 9, mainLength: 6, wingWidth: 3, wingLength: 5 });
+  const [mountType, setMountType] = useState('Áp mái');
+  const [panelDimensions, setPanelDimensions] = useState({ length: 2278, width: 1133 });
+  const [placement, setPlacement] = useState('Mái chính trước');
+  const [panelsPerChain, setPanelsPerChain] = useState(9);
+  const [chains, setChains] = useState([{ id: 1, count: 9, placement: 'Mái chính trước' }]);
   const [menuOpen, setMenuOpen] = useState(false);
 
   const selectedHotspot = useMemo(
@@ -103,6 +113,51 @@ function App() {
     [activeHotspot],
   );
   const selectedMode = simulationModes.find((mode) => mode.id === simulationMode) ?? simulationModes[0];
+  const totalPanels = chains.reduce((total, chain) => total + chain.count, 0);
+  const addChain = () => setChains((current) => [...current, { id: current.length + 1, count: panelsPerChain, placement }]);
+  const resetSimulation = () => {
+    setRoofType('Mái tôn');
+    setRoofDimensions({ mainWidth: 9, mainLength: 6, wingWidth: 3, wingLength: 5 });
+    setMountType('Áp mái');
+    setPanelDimensions({ length: 2278, width: 1133 });
+    setPlacement('Mái chính trước');
+    setPanelsPerChain(9);
+    setChains([{ id: 1, count: 9, placement: 'Mái chính trước' }]);
+  };
+  const saveSimulation = () => {
+    const canvas = document.createElement('canvas');
+    canvas.width = 1200;
+    canvas.height = 760;
+    const context = canvas.getContext('2d');
+    context.fillStyle = '#10251f';
+    context.fillRect(0, 0, canvas.width, canvas.height);
+    context.fillStyle = '#c8f36e';
+    context.font = '700 32px Manrope, sans-serif';
+    context.fillText('SOLIQ / MÔ PHỎNG HỆ ĐIỆN MẶT TRỜI', 56, 70);
+    context.fillStyle = '#dce9df';
+    context.font = '18px Manrope, sans-serif';
+    context.fillText(`${roofType} · ${mountType} · ${totalPanels} tấm pin`, 56, 108);
+    context.strokeStyle = '#8ebdf5';
+    context.lineWidth = 3;
+    context.strokeRect(280, 190, 640, 300);
+    chains.forEach((chain, chainIndex) => {
+      for (let panelIndex = 0; panelIndex < chain.count; panelIndex += 1) {
+        const x = 305 + ((panelIndex % 9) * 65);
+        const y = 215 + (chainIndex * 72) + (Math.floor(panelIndex / 9) * 42);
+        context.fillStyle = '#245b6e';
+        context.fillRect(x, y, 56, 32);
+        context.strokeStyle = '#a9dbef';
+        context.strokeRect(x, y, 56, 32);
+      }
+    });
+    context.fillStyle = '#9db1a7';
+    context.font = '16px monospace';
+    context.fillText(`Tổng: ${chains.length} chuỗi · ${totalPanels} tấm`, 56, 680);
+    const link = document.createElement('a');
+    link.download = 'soliq-mo-phong-dien-mat-troi.png';
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+  };
 
   return (
     <div className="app">
@@ -194,20 +249,34 @@ function App() {
           </div>
           <div className="experience-board">
             <div className="board-toolbar"><span><span className="status-dot" /> LIVE SIMULATION</span><span>HYBRID SYSTEM / 08.6 KWP</span></div>
-            <div className={`simulation mode-${simulationMode} ${isPlaying ? 'is-playing' : ''}`}>
+            <div className="builder-layout">
+              <aside className="builder-controls">
+                <div className="builder-title"><strong>Mô phỏng 3D hệ điện mặt trời</strong><p>Trên mái đã có 1 chuỗi pin mẫu. Chạm vào chuỗi để kéo đổi chỗ, hoặc nhập số tấm rồi bấm Thêm chuỗi.</p></div>
+                <label className="builder-label">Loại mái<select value={roofType} onChange={(event) => setRoofType(event.target.value)}>{roofTypes.map((type) => <option key={type}>{type}</option>)}</select></label>
+                <div className="builder-fields"><label>Rộng mái chính<input type="number" value={roofDimensions.mainWidth} onChange={(event) => setRoofDimensions({ ...roofDimensions, mainWidth: event.target.value })} /></label><label>Dài mái chính<input type="number" value={roofDimensions.mainLength} onChange={(event) => setRoofDimensions({ ...roofDimensions, mainLength: event.target.value })} /></label><label>Rộng mái nhánh<input type="number" value={roofDimensions.wingWidth} onChange={(event) => setRoofDimensions({ ...roofDimensions, wingWidth: event.target.value })} /></label><label>Dài mái nhánh<input type="number" value={roofDimensions.wingLength} onChange={(event) => setRoofDimensions({ ...roofDimensions, wingLength: event.target.value })} /></label></div>
+                <fieldset><legend>Cách lắp</legend><div className="choice-row">{['Áp mái', 'Có khung sắt'].map((type) => <button className={mountType === type ? 'choice-active' : ''} key={type} onClick={() => setMountType(type)}>{type}</button>)}</div></fieldset>
+                <fieldset><legend>Kích thước tấm pin (mm)</legend><div className="builder-fields"><label>Dài<input type="number" value={panelDimensions.length} onChange={(event) => setPanelDimensions({ ...panelDimensions, length: event.target.value })} /></label><label>Rộng<input type="number" value={panelDimensions.width} onChange={(event) => setPanelDimensions({ ...panelDimensions, width: event.target.value })} /></label></div></fieldset>
+                <fieldset><legend>Đặt chuỗi mới lên</legend><div className="choice-grid">{placementOptions.map((option) => <button className={placement === option ? 'choice-active' : ''} key={option} onClick={() => setPlacement(option)}>{option}</button>)}</div></fieldset>
+                <div className="chain-adder"><span>Số tấm pin trong chuỗi mới</span><div><button onClick={() => setPanelsPerChain(Math.max(1, panelsPerChain - 1))}>−</button><strong>{panelsPerChain}</strong><button onClick={() => setPanelsPerChain(panelsPerChain + 1)}>+</button></div><button className="add-chain" onClick={addChain}>＋ Thêm chuỗi {panelsPerChain} tấm</button></div>
+                <div className="builder-actions"><button onClick={() => setChains([])}>🗑 Xoá tất cả</button><button onClick={resetSimulation}>Làm lại từ đầu</button></div>
+              </aside>
+              <div className={`simulation mode-${simulationMode} ${isPlaying ? 'is-playing' : ''}`}>
               <div className="sim-grid" />
               <div className="sim-sun" />
-              <div className="sim-house"><div className="sim-panel-roof">{Array.from({ length: 12 }).map((_, index) => <i key={index} />)}</div><div className="sim-wall"><span className="sim-window" /><span className="sim-window second" /><span className="sim-door" /></div></div>
+              <div className="sim-house"><div className="sim-panel-roof">{Array.from({ length: Math.max(1, Math.min(24, totalPanels)) }).map((_, index) => <i key={index} />)}</div><div className="sim-wall"><span className="sim-window" /><span className="sim-window second" /><span className="sim-door" /></div></div>
               {showBattery && <div className="sim-battery"><BatteryCharging size={20} /><span>BATTERY<br /><b>12.4 kWh</b></span></div>}
               {showFlow && <div className="energy-flow flow-one"><span /><span /><span /><span /></div>}
               {hotspots.map((hotspot) => <button key={hotspot.id} className={activeHotspot === hotspot.id ? 'hotspot active' : 'hotspot'} style={{ left: hotspot.x, top: hotspot.y }} onClick={() => setActiveHotspot(hotspot.id)} aria-label={hotspot.label}><span>{activeHotspot === hotspot.id ? <Check size={12} /> : '+'}</span></button>)}
               <div className="sim-caption"><span>{selectedMode.title}</span><p>{selectedMode.copy}</p><small>{selectedHotspot.label}: {selectedHotspot.copy}</small></div>
+              </div>
             </div>
+            <div className="chain-summary"><div><strong>Các chuỗi ({chains.length})</strong>{chains.length === 0 && <span>Chưa có chuỗi pin nào</span>}{chains.map((chain) => <span key={chain.id}>Chuỗi {chain.id}: {chain.count} tấm (dọc) · {chain.placement}</span>)}</div><strong>Tổng: {chains.length} chuỗi · {totalPanels} tấm</strong></div>
             <div className="board-controls">
               <div className="mode-switcher" aria-label="Chọn trạng thái mô phỏng">{simulationModes.map((mode) => <button className={simulationMode === mode.id ? 'mode-active' : ''} key={mode.id} onClick={() => setSimulationMode(mode.id)}>{mode.label}</button>)}</div>
               <button onClick={() => setIsPlaying(!isPlaying)}><CirclePlay size={17} /> {isPlaying ? 'Đang phát animation' : 'Phát animation'}</button>
               <button className={showBattery ? 'control-active' : ''} onClick={() => setShowBattery(!showBattery)}><Layers3 size={16} /> Pin lưu trữ</button>
               <button className={showFlow ? 'control-active' : ''} onClick={() => setShowFlow(!showFlow)}><ScanLine size={16} /> Dòng năng lượng</button>
+              <button onClick={saveSimulation}>📷 Lưu ảnh mô phỏng</button>
               <span className="drag-hint"><Orbit size={15} /> Kéo để xoay mô hình</span>
             </div>
           </div>
